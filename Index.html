@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ငွေစုမှတ်တမ်း Pro</title>
+
+<!-- PWA / App အစစ်အတွက် လိုအပ်သော meta များ -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#121212">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ငွေစု Pro">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background-color: #121212;
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    /* App feel ရအောင် - swipe-to-refresh, text ရွေးလို့မရအောင် ပိတ်ခြင်း */
+    overscroll-behavior-y: contain;
+    -webkit-user-select: none;
+    user-select: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  input { -webkit-user-select: text; user-select: text; }
+
+  .wrap {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 20px 16px calc(24px + env(safe-area-inset-bottom));
+    padding-top: calc(20px + env(safe-area-inset-top));
+  }
+  h1 { text-align: center; font-size: 20px; font-weight: 700; margin: 4px 0 24px; }
+
+  .card {
+    background-color: #1e1e1e;
+    border-radius: 20px;
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+  label.small { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: .03em; }
+
+  input {
+    background-color: #2a2a2a;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    width: 100%;
+    font-family: inherit;
+  }
+  #goal {
+    font-size: 26px;
+    font-weight: 700;
+    margin-top: 10px;
+    padding: 10px 12px;
+  }
+  #goal:disabled { opacity: .6; }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  #date, #amount {
+    padding: 16px;
+    text-align: center;
+    border-radius: 16px;
+    font-size: 15px;
+  }
+  #addBtn {
+    grid-column: span 2;
+    background-color: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 16px;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  #addBtn:active { background-color: #1d4ed8; }
+
+  .dash { display: flex; gap: 14px; margin-bottom: 20px; }
+  .dash > div { flex: 1; padding: 18px; border-radius: 22px; }
+  .dash .total { background-color: #2563eb; }
+  .dash .rest { background-color: #1e1e1e; }
+  .dash p { margin: 0; font-size: 11px; }
+  .dash .total p { color: #bfdbfe; }
+  .dash .rest p { color: #9ca3af; }
+  .dash h2 { margin: 6px 0 0; font-size: 22px; font-weight: 700; }
+
+  .hist { background-color: #1e1e1e; border-radius: 22px; padding: 22px; }
+  .hist h3 { margin: 0 0 14px; font-size: 15px; font-weight: 700; }
+  #history { max-height: 240px; overflow-y: auto; }
+  #history::-webkit-scrollbar { display: none; }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #2f2f2f;
+  }
+  .row:last-child { border-bottom: none; }
+  .row .d { font-size: 13px; color: #9ca3af; }
+  .row .a { font-weight: 700; }
+  .empty { text-align: center; color: #6b7280; font-size: 13px; padding: 20px 0; }
+
+  #installBtn {
+    display: none;
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px dashed #2563eb;
+    background: transparent;
+    color: #93c5fd;
+    font-weight: 600;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>ငွေစုမှတ်တမ်း</h1>
+
+    <div class="card">
+      <label class="small">ပန်းတိုင်ငွေပမာဏ</label>
+      <input type="number" id="goal" inputmode="numeric" placeholder="1,600,000">
+    </div>
+
+    <div class="grid2">
+      <input type="date" id="date">
+      <input type="number" id="amount" inputmode="numeric" placeholder="စုငွေ">
+      <button id="addBtn" onclick="addEntry()">မှတ်တမ်းတင်မည်</button>
+    </div>
+
+    <div class="dash">
+      <div class="total">
+        <p>စုစုပေါင်း</p>
+        <h2 id="totalDisplay">0</h2>
+      </div>
+      <div class="rest">
+        <p>ကျန်ရှိ</p>
+        <h2 id="remainingDisplay">0</h2>
+      </div>
+    </div>
+
+    <div class="hist">
+      <h3>လတ်တလော မှတ်တမ်း</h3>
+      <div id="history"></div>
+    </div>
+
+    <button id="installBtn">📲 App ကို ဖုန်းပေါ်တင်မည် (Install)</button>
+  </div>
+
+  <script>
+    // ---- Service Worker ---- (Offline app-shell caching)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error', err));
+      });
+    }
+
+    // ---- Install prompt (Android/Chrome) ----
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+    });
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.style.display = 'none';
+    });
+    window.addEventListener('appinstalled', () => {
+      installBtn.style.display = 'none';
+    });
+
+    // ---- App Logic ----
+    let savings = [];
+    let goal = 0;
+
+    try { savings = JSON.parse(localStorage.getItem('savings')) || []; } catch (e) { savings = []; }
+    goal = parseFloat(localStorage.getItem('goal')) || 0;
+
+    const goalInput = document.getElementById('goal');
+    const historyContainer = document.getElementById('history');
+
+    if (goal > 0) {
+      goalInput.value = goal;
+      goalInput.disabled = true;
+    }
+    document.getElementById('date').valueAsDate = new Date();
+    updateUI();
+
+    function addEntry() {
+      const amountInput = document.getElementById('amount');
+      const dateInput = document.getElementById('date');
+      const amount = parseFloat(amountInput.value);
+      const date = dateInput.value;
+
+      // ပန်းတိုင်ကို ပထမဆုံးအကြိမ် သတ်မှတ်ခြင်း
+      if (goal === 0 && parseFloat(goalInput.value) > 0) {
+        goal = parseFloat(goalInput.value);
+        localStorage.setItem('goal', goal);
+        goalInput.disabled = true;
+      }
+
+      if (goal === 0) {
+        alert('ပန်းတိုင်ငွေပမာဏကို အရင်ဖြည့်ပေးပါ။');
+        return;
+      }
+      if (!(amount > 0)) {
+        alert('စုငွေပမာဏကို မှန်ကန်စွာဖြည့်ပေးပါ။');
+        return;
+      }
+      if (!date) {
+        alert('ရက်စွဲကို ရွေးပေးပါ။');
+        return;
+      }
+
+      savings.push({ date, amount });
+      localStorage.setItem('savings', JSON.stringify(savings));
+      amountInput.value = '';
+      updateUI();
+    }
+
+    function updateUI() {
+      const total = savings.reduce((sum, item) => sum + item.amount, 0);
+      document.getElementById('totalDisplay').innerText = total.toLocaleString();
+      document.getElementById('remainingDisplay').innerText = Math.max(0, goal - total).toLocaleString();
+
+      if (savings.length === 0) {
+        historyContainer.innerHTML = '<div class="empty">မှတ်တမ်း မရှိသေးပါ</div>';
+        return;
+      }
+
+      historyContainer.innerHTML = savings.slice().reverse().map(item => `
+        <div class="row">
+          <span class="d">${item.date}</span>
+          <span class="a">+ ${item.amount.toLocaleString()}</span>
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
